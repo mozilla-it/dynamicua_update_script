@@ -65,8 +65,8 @@ function checkretval(){
     fi
 }
 
-function check_json_verify () {
-    [[ -n "$( which json_verify )" ]] || abort "json_verify command (part of package yajl) not found in PATH"
+function check_jq () {
+    [[ -n "$( which jq )" ]] || abort "jq command (part of package yajl) not found in PATH"
 }
 
 function update_app () {
@@ -117,17 +117,8 @@ function update_app () {
 
 ### Main script code.
 
-# make sure we have a working json_verify command
-check_json_verify
+# make sure we have a working jq command
+check_jq
 
 # update the files on disk
 update_app  "fennec"  "mobile/android/app"  "{aa3c5121-dab2-40e2-81ca-7ea25febc110}"
-
-# deploy, if necessary
-if [[ "$NEED_TO_DEPLOY" == 'yes' ]]
-then
-    #deploy the code
-    if [ -x /data/genericrhel6/deploy ]; then
-      /data/genericrhel6/deploy dynamicua.cdn.mozilla.net
-    fi
-fi
