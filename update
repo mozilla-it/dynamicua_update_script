@@ -1,4 +1,4 @@
-#/bin/bash
+#!/usr/bin/bash
 
 ### This file contains four sections:
     # Global config variables.
