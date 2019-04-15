@@ -1,4 +1,4 @@
-#/bin/bash
+#!/bin/bash
 
 ### This file contains four sections:
     # Global config variables.
@@ -11,7 +11,11 @@ function abort () { echo "Error: $*, aborting."; exit 1; }
 
 ### Global config variables.
 
-SRC_DIR="/data/genericrhel6/src/dynamicua.cdn.mozilla.net"
+if [ "$1" != "" ]; then
+  SRC_DIR=$1
+else
+  SRC_DIR="/data/genericrhel6/src/dynamicua.cdn.mozilla.net"
+fi
 [[ -d "$SRC_DIR" ]] || abort "SRC_DIR '${SRC_DIR}' is not a directory"
 
 # For each update path, we craft a URL:
@@ -25,10 +29,15 @@ FILE_URL_FILENAME="ua-update.json.in"
 
 ### Calculated global values.
 
-CODE_DIR="${SRC_DIR}/dynamicua"
+if [ "$2" != "" ]; then
+  CODE_DIR=$2
+else
+  CODE_DIR="${SRC_DIR}/dynamicua"
+fi
+
 [[ -d "$CODE_DIR" ]] || abort "CODE_DIR '${CODE_DIR}' is not a directory"
 
-VERSION=$(cat "${SRC_DIR}/version.txt")
+VERSION=$(cat "${SRC_DIR}/version.txt" 2>/dev/null)
 [[ -n "$VERSION" ]] || abort "unable to load VERSION from '${SRC_DIR}/version.txt'"
 VERSION_DIR=$CODE_DIR/$VERSION
 
@@ -56,8 +65,8 @@ function checkretval(){
     fi
 }
 
-function check_json_verify () {
-    [[ -n "$( which json_verify )" ]] || abort "json_verify command (part of package yajl) not found in PATH"
+function check_jq () {
+    [[ -n "$( which jq )" ]] || abort "jq command (part of package yajl) not found in PATH"
 }
 
 function update_app () {
@@ -78,7 +87,7 @@ function update_app () {
 
     OUTPUT_FILE="${VERSION_DIR}/${APP_ID}"
 
-    DEPLOYED_REVISION="$(cat $REVISION_FILE)"
+    DEPLOYED_REVISION="$(cat $REVISION_FILE 2>/dev/null)"
 
     if [[ "$DEPLOYED_REVISION" == "$LATEST_REVISION" ]]
     then
@@ -94,7 +103,7 @@ function update_app () {
     checkretval
 
     # verify we have valid json before pushing
-    cat $OUTPUT_FILE | json_verify > /dev/null
+    cat $OUTPUT_FILE | jq . > /dev/null
     checkretval
 
     # update the current revision on disk
@@ -108,15 +117,8 @@ function update_app () {
 
 ### Main script code.
 
-# make sure we have a working json_verify command
-check_json_verify
+# make sure we have a working jq command
+check_jq
 
 # update the files on disk
 update_app  "fennec"  "mobile/android/app"  "{aa3c5121-dab2-40e2-81ca-7ea25febc110}"
-
-# deploy, if necessary
-if [[ "$NEED_TO_DEPLOY" == 'yes' ]]
-then
-    #deploy the code
-    /data/genericrhel6/deploy dynamicua.cdn.mozilla.net
-fi
